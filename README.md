@@ -89,7 +89,7 @@ Cette route doit :
 
 ---
 
-### 4️⃣ Plugin **frontend** – page + onglet
+### 4️⃣ Plugin **frontend** – page "Calls Metrics"
 
 Créez un plugin frontend **`call-metrics`** qui :
 - Déclare un **ApiRef** client pour appeler le backend.
