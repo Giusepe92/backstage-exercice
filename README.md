@@ -184,6 +184,32 @@ spec:
 
 ---
 
+---
+
+## 🔗 Ressources utiles
+
+Voici quelques liens officiels et références pour vous aider durant l’exercice :
+
+- 📘 **Documentation Backstage officielle** :  
+  [https://backstage.io/docs](https://backstage.io/docs)
+
+- 🧩 **Guide de création d’un plugin (nouvelle architecture modulaire)** :  
+  [https://backstage.io/docs/plugins/create-plugins](https://backstage.io/docs/plugins/create-plugins)
+
+- ⚙️ **API Backend (createBackendPlugin, coreServices, etc.)** :  
+  [https://backstage.io/docs/backend-system/](https://backstage.io/docs/backend-system/)
+
+- 💻 **API Frontend (createFrontendPlugin, createExtension, etc.)** :  
+  [https://backstage.io/docs/frontend-system/](https://backstage.io/docs/frontend-system/)
+
+- 🎥 **Démo officielle Backstage (instance publique)** :  
+  [https://demo.backstage.io](https://demo.backstage.io)
+
+- 🧠 **Catalogue d’entités et annotations** :  
+  [https://backstage.io/docs/features/software-catalog/](https://backstage.io/docs/features/software-catalog/)
+
+Ces ressources ne sont **pas obligatoires**, mais peuvent grandement faciliter votre compréhension de l’écosystème Backstage et des bonnes pratiques de développement de plugins.
+
 > ⚠️ **Remarque importante :**  
 > L’objectif de cet exercice n’est **pas** de tout coder à la main, ligne par ligne.  
 > Vous pouvez bien sûr vous appuyer sur un **outil d’assistance IA** (ChatGPT, Copilot, etc.) pour gagner du temps ou mieux comprendre la documentation de Backstage.  
