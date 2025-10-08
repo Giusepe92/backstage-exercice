@@ -194,7 +194,7 @@ Voici quelques liens officiels et références pour vous aider durant l’exerci
   [https://backstage.io/docs](https://backstage.io/docs)
 
 - 🧩 **Guide de création d’un plugin (nouvelle architecture modulaire)** :  
-  [https://backstage.io/docs/plugins/create-plugins](https://backstage.io/docs/plugins/create-plugins)
+  [https://backstage.io/docs/plugins/create-a-plugin/](https://backstage.io/docs/plugins/create-a-plugin/)
 
 - ⚙️ **API Backend (createBackendPlugin, coreServices, etc.)** :  
   [https://backstage.io/docs/backend-system/](https://backstage.io/docs/backend-system/)
