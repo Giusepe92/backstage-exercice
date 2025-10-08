@@ -29,8 +29,7 @@ Cet exercice vise à évaluer :
   - et où accéder à votre plugin dans l’interface.
 - **3 captures d’écran** :
   1. la page globale “Call Metrics”,
-  2. l’onglet “Call Metrics” d’un composant,
-  3. la réponse JSON de l’API GET dans le navigateur ou via `curl`.
+  2. la réponse JSON de l’API GET dans le navigateur ou via `curl`.
 - Un **retour d’expérience** écrit (quelques paragraphes) :  
   ce que vous avez compris de l’architecture Backstage, vos impressions, et les difficultés rencontrées.
 
