@@ -27,7 +27,7 @@ Cet exercice vise à évaluer :
 - Un **README** clair expliquant :
   - comment lancer le projet,
   - et où accéder à votre plugin dans l’interface.
-- **3 captures d’écran** :
+- **2 captures d’écran** :
   1. la page globale “Call Metrics”,
   2. la réponse JSON de l’API GET dans le navigateur ou via `curl`.
 - Un **retour d’expérience** écrit (quelques paragraphes) :  
