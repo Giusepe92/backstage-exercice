@@ -184,8 +184,6 @@ spec:
 
 ---
 
----
-
 ## 🔗 Ressources utiles
 
 Voici quelques liens officiels et références pour vous aider durant l’exercice :
@@ -210,12 +208,16 @@ Voici quelques liens officiels et références pour vous aider durant l’exerci
 
 Ces ressources ne sont **pas obligatoires**, mais peuvent grandement faciliter votre compréhension de l’écosystème Backstage et des bonnes pratiques de développement de plugins.
 
+---
+
 > ⚠️ **Remarque importante :**  
 > L’objectif de cet exercice n’est **pas** de tout coder à la main, ligne par ligne.  
 > Vous pouvez bien sûr vous appuyer sur un **outil d’assistance IA** (ChatGPT, Copilot, etc.) pour gagner du temps ou mieux comprendre la documentation de Backstage.  
 > Ce que nous attendons avant tout, c’est que vous **compreniez ce que vous implémentez** :  
 > comment votre code fonctionne, comment les plugins s’intègrent dans Backstage, et comment la partie **frontend (React)** et **backend (Node)** interagissent ensemble.  
 > Lors de l’échange de restitution, vous devrez simplement **expliquer clairement votre approche**, vos choix, et la logique générale de votre implémentation.
+
+---
 
 👨‍💻 **Bonne chance !**  
 Prenez du plaisir à explorer Backstage et à découvrir sa logique interne.
