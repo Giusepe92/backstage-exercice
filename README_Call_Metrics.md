@@ -7,7 +7,7 @@ Créer un mini-plugin **backend** + **frontend** pour **Backstage** qui :
 1. lit les entités `Component` du **Software Catalog**,
 2. récupère deux **annotations numériques** par composant (appels entrants / sortants),
 3. expose une **API GET** qui agrège ces chiffres,
-4. affiche une **page** dans le frontend Backstage (et un **onglet** sur la page d’un composant) pour visualiser ces métriques.
+4. affiche une **page** dans le frontend Backstage.
 
 ---
 
