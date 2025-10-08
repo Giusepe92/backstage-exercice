@@ -1,147 +1,216 @@
-# 🎯 Exercice Backstage – “Call Metrics”
+ # 🎯 Exercice Backstage NEXT (2025) – “Call Metrics”
 
 ## 🧩 Objectif
 
-Créer un mini-plugin **backend** + **frontend** pour **Backstage** qui :
-
-1. lit les entités `Component` du **Software Catalog**,
-2. récupère deux **annotations numériques** par composant (appels entrants / sortants),
-3. expose une **API GET** qui agrège ces chiffres,
-4. affiche une **page** dans le frontend Backstage (et un **onglet** sur la page d’un composant) pour visualiser ces métriques.
+Créer un mini-plugin **modulaire (backend + frontend)** pour **Backstage (nouvelle architecture)** qui :
+1. Lit les entités `Component` du **Software Catalog** via l’API interne du backend.
+2. Expose une **API HTTP GET** via le **backend plugin system** (`createBackendPlugin` + `router`).
+3. Crée une **page frontend** et un **onglet d’entité** via le **frontend system** (`createFrontendPlugin` + `createExtension`).
+4. Affiche un résumé du nombre d’appels entrants/sortants (annotations Backstage).
 
 ---
 
 ## 🎓 But pédagogique
 
 Cet exercice vise à évaluer :
-- votre aisance avec **Node.js** et **React**,  
-- votre compréhension de l’**architecture Backstage** (front, back, API, discovery, catalog),  
-- votre autonomie dans la **mise en place d’un environnement local**,  
-- et votre capacité à livrer un code clair et structuré.
+- votre aisance avec **Node.js** et **React**,
+- votre compréhension de l’**architecture Backstage NEXT** (système modulaire),
+- votre capacité à manipuler **plugins frontend et backend** modernes (`createBackendPlugin`, `createFrontendPlugin`),
+- et votre autonomie dans la mise en place d’un environnement local.
 
 ---
 
-## 📦 Livrables attendus
+## ⚙️ Environnement de départ
 
-- Un **dépôt Git** (ou archive) contenant le code complet.
-- Un **README** clair expliquant :
-  - comment lancer le projet,
-  - et où accéder à votre plugin dans l’interface.
-- **3 captures d’écran** :
-  1. la page globale “Call Metrics”,
-  2. l’onglet “Call Metrics” d’un composant,
-  3. la réponse JSON de l’API GET dans le navigateur ou via `curl`.
-- Un **retour d’expérience** écrit (quelques paragraphes) :  
-  ce que vous avez compris de l’architecture Backstage, vos impressions, et les difficultés rencontrées.
+Créez une application Backstage à jour :
 
----
-
-## 🛠️ Cahier des charges
-
-### 1️⃣ Pré-requis & démarrage
-
-- Créez une application Backstage locale :
-  ```bash
-  npx @backstage/create-app@latest
-  cd my-backstage-app
-  yarn dev
-  ```
-- Utilisez le **catalogue d’exemple** fourni par le squelette Backstage (`example.yaml` et données bootstrap).
-
----
-
-### 2️⃣ Enrichir les entités avec des annotations
-
-Dans `catalog-info.yaml` (ou `example.yaml`) de quelques composants, ajoutez deux annotations numériques :
-
-```yaml
-metadata:
-  annotations:
-    example.com/calls.in: "12"
-    example.com/calls.out: "7"
+```bash
+npx @backstage/create-app@latest
+cd my-backstage-app
+yarn dev
 ```
 
-➡️ Mettez des valeurs différentes pour au moins **3 composants**.
+Vérifiez que votre projet utilise bien le **nouveau système modulaire** :
+- backend : `packages/backend/src/index.ts` avec `createBackend`
+- frontend : `packages/app/src/App.tsx` avec `createApp`
 
 ---
 
-### 3️⃣ Plugin **backend** – API GET
+## 🧠 Partie 1 — Backend Plugin (modulaire)
 
-Créez un plugin backend nommé **`call-metrics`** avec une route :
+### But
+Créer un **plugin backend “call-metrics”** exposant une route :
 
 ```
 GET /api/call-metrics/summary
 ```
 
-Cette route doit :
-- interroger le **Software Catalog** (via `CatalogClient`),
-- filtrer les entités de type `Component`,
-- lire les annotations `example.com/calls.in` et `example.com/calls.out` (0 si absentes),
-- retourner un JSON de synthèse comme ci-dessous :
+### Étapes
 
-```json
-{
-  "totalComponents": 5,
-  "scannedComponents": 3,
-  "sumCallsIn": 41,
-  "sumCallsOut": 29,
-  "topComponents": [
-    { "name": "payment-service", "callsIn": 20, "callsOut": 10 },
-    { "name": "web-frontend", "callsIn": 12, "callsOut": 9 }
-  ]
-}
-```
+1. Générez le plugin :
+   ```bash
+   yarn new --select plugin-backend --name call-metrics
+   ```
 
-*(Optionnel)* : ajoutez une route `GET /api/call-metrics/components/:name`  
-→ qui renvoie les deux chiffres d’un seul composant.
+2. Implémentez le plugin dans `plugins/call-metrics/src/plugin.ts` :
 
-#### Pistes de fichiers côté backend :
-- `packages/backend/src/plugins/call-metrics.ts`
-- `packages/backend/src/plugins/call-metrics/router.ts`
+   ```ts
+   import { createBackendPlugin } from '@backstage/backend-plugin-api';
+   import { coreServices } from '@backstage/backend-plugin-api';
+   import { CatalogClient } from '@backstage/catalog-client';
+   import { Router } from 'express';
 
-💡 Vous pouvez utiliser :
-```ts
-import { CatalogClient } from '@backstage/catalog-client';
-```
+   export const callMetricsPlugin = createBackendPlugin({
+     pluginId: 'call-metrics',
+     register(env) {
+       env.registerInit({
+         deps: { logger: coreServices.logger, discovery: coreServices.discovery },
+         async init({ logger, discovery }) {
+           const catalogClient = new CatalogClient({ discoveryApi: discovery });
+           const router = Router();
 
-et le système **`discovery`** pour résoudre les URLs internes.
+           router.get('/summary', async (_req, res) => {
+             const entities = await catalogClient.getEntities({ filter: { kind: 'Component' } });
+             const scanned = entities.items.filter(e => e.metadata.annotations?.['example.com/calls.in']);
+             const summary = {
+               totalComponents: entities.items.length,
+               scannedComponents: scanned.length,
+               sumCallsIn: scanned.reduce((s, e) => s + Number(e.metadata.annotations?.['example.com/calls.in'] ?? 0), 0),
+               sumCallsOut: scanned.reduce((s, e) => s + Number(e.metadata.annotations?.['example.com/calls.out'] ?? 0), 0),
+               topComponents: scanned.map(e => ({
+                 name: e.metadata.name,
+                 callsIn: Number(e.metadata.annotations?.['example.com/calls.in'] ?? 0),
+                 callsOut: Number(e.metadata.annotations?.['example.com/calls.out'] ?? 0),
+               })),
+             };
+             res.json(summary);
+           });
+
+           env.httpRouter.use(router);
+           logger.info('✅ Call Metrics backend plugin initialized');
+         },
+       });
+     },
+   });
+   ```
+
+3. Enregistrez le plugin dans `packages/backend/src/index.ts` :
+
+   ```ts
+   import { createBackend } from '@backstage/backend-defaults';
+   import { callMetricsPlugin } from '@internal/plugin-call-metrics';
+
+   const backend = createBackend();
+   backend.add(callMetricsPlugin());
+   backend.start();
+   ```
 
 ---
 
-### 4️⃣ Plugin **frontend** – page + onglet
+## 💻 Partie 2 — Frontend Plugin (modulaire)
 
-Créez un plugin frontend **`call-metrics`** qui :
-- Déclare un **ApiRef** client pour appeler le backend.
-- Ajoute une **page** accessible via le menu “Call Metrics”.
-- Appelle `GET /api/call-metrics/summary`.
-- Affiche :
-  - `totalComponents`, `scannedComponents`, `sumCallsIn`, `sumCallsOut` (sous forme de *cards* ou *info boxes*),
-  - un **tableau** avec les `topComponents` (`name`, `callsIn`, `callsOut`).
+### But
+Créer une **page “Call Metrics”** et un **onglet d’entité** pour visualiser les données.
 
-#### Puis ajoutez un **onglet** “Call Metrics” sur la page d’un composant :
-- Utilisez le hook `useEntity()` pour récupérer l’entité courante.
-- Lisez directement les annotations ou appelez l’API par composant.
-- Affichez les deux chiffres (callsIn / callsOut).
+### Étapes
 
-#### Fichiers possibles :
-- `plugins/call-metrics/src/plugin.ts`
-- `plugins/call-metrics/src/api.ts`
-- `plugins/call-metrics/src/routes.tsx`
-- Intégration dans `packages/app/src/App.tsx`
-- Ajout d’un onglet dans `packages/app/src/components/catalog/EntityPage.tsx`
+1. Générez le plugin :
+   ```bash
+   yarn new --select plugin-frontend --name call-metrics
+   ```
 
-#### UI :
-Utilisez les composants **Material UI** / **Backstage Core**.  
-Pas besoin de librairie de charts ou de design complexe.
+2. Dans `plugins/call-metrics/src/plugin.ts` :
+
+   ```ts
+   import { createFrontendPlugin, createExtension } from '@backstage/frontend-plugin-api';
+
+   export const CallMetricsPage = createExtension({
+     name: 'CallMetricsPage',
+     component: {
+       lazy: () => import('./components/CallMetricsPage'),
+     },
+   });
+
+   export const callMetricsPlugin = createFrontendPlugin({
+     id: 'call-metrics',
+     extensions: [CallMetricsPage],
+   });
+   ```
+
+3. Créez la page `plugins/call-metrics/src/components/CallMetricsPage.tsx` :
+
+   ```tsx
+   import React, { useEffect, useState } from 'react';
+   import { useApi, discoveryApiRef } from '@backstage/core-plugin-api';
+   import { Page, Header, Content, Table } from '@backstage/core-components';
+
+   export const CallMetricsPage = () => {
+     const discoveryApi = useApi(discoveryApiRef);
+     const [data, setData] = useState<any>(null);
+
+     useEffect(() => {
+       (async () => {
+         const baseUrl = await discoveryApi.getBaseUrl('call-metrics');
+         const res = await fetch(`${baseUrl}/summary`);
+         setData(await res.json());
+       })();
+     }, [discoveryApi]);
+
+     if (!data) return <div>Loading...</div>;
+
+     return (
+       <Page themeId="tool">
+         <Header title="Call Metrics Summary" />
+         <Content>
+           <p>Total Components: {data.totalComponents}</p>
+           <p>Components with annotations: {data.scannedComponents}</p>
+           <p>Sum Calls In: {data.sumCallsIn}</p>
+           <p>Sum Calls Out: {data.sumCallsOut}</p>
+
+           {data.topComponents && (
+             <Table
+               options={{ paging: false }}
+               data={data.topComponents}
+               columns={[
+                 { title: 'Name', field: 'name' },
+                 { title: 'Calls In', field: 'callsIn' },
+                 { title: 'Calls Out', field: 'callsOut' },
+               ]}
+             />
+           )}
+         </Content>
+       </Page>
+     );
+   };
+   ```
+
+4. Enregistrez la page dans `packages/app/src/App.tsx` :
+
+   ```ts
+   import { createApp } from '@backstage/frontend-defaults';
+   import { callMetricsPlugin } from '@internal/plugin-call-metrics';
+
+   const app = createApp({
+     plugins: [callMetricsPlugin()],
+   });
+
+   export default app.createRoot();
+   ```
 
 ---
 
-### 5️⃣ Contraintes & Simplicité
+## 🧩 Partie 3 — Ajout d’un onglet d’entité (optionnel)
 
-- Une seule API GET obligatoire : `/api/call-metrics/summary`.
-- Pas de base de données : tout est lu depuis le Catalog.
-- Gestion d’erreurs simple : `0` si l’annotation n’existe pas.
-- Code clair, structuré, et un README de lancement.
+```tsx
+import { createEntityContentExtension } from '@backstage/plugin-catalog-react';
+
+export const CallMetricsTab = createEntityContentExtension({
+  name: 'CallMetricsTab',
+  component: {
+    lazy: () => import('./components/EntityCallMetricsTab'),
+  },
+});
+```
 
 ---
 
@@ -149,83 +218,23 @@ Pas besoin de librairie de charts ou de design complexe.
 
 | Critère | Pondération |
 |----------|--------------|
-| Mise en place Backstage + README clair | 20% |
-| Plugin backend (route GET, usage CatalogClient, agrégations) | 30% |
-| Plugin frontend (page + onglet Entity, appels API) | 30% |
+| Mise en place Backstage NEXT + README clair | 20% |
+| Plugin backend (API, CatalogClient, agrégations) | 30% |
+| Plugin frontend (page + onglet, appels API) | 30% |
 | Qualité du code, UX minimale, lisibilité | 20% |
 
 ---
 
-## ⭐ Bonus (facultatif)
-
-- Filtrer par **owner** ou **system** (petit menu déroulant).
-- Ajouter un **ratio** (callsIn vs callsOut) avec tri.
-- Bouton “Copy JSON” pour copier la réponse API.
-
----
-
-## 🧠 Restitution & débrief
-
-Lors de la restitution, merci d’expliquer :
-- Comment vous avez compris l’**architecture Backstage** (app, plugins, APIs, discovery, catalog),
-- Vos **choix techniques**,
-- Ce que vous avez trouvé **simple** ou **difficile**,
-- Vos **impressions globales** sur le framework Backstage.
-
----
-
-## 💡 Indices utiles
-
-- Le backend Backstage utilise **Express**, vous pouvez créer un simple `Router()` exporté.
-- Le frontend peut appeler directement `/api/call-metrics/...` ou passer par le **discoveryApi**.
-- Le **CatalogClient** est la manière la plus simple de lire les entités depuis le backend.
-
----
-
-## 🚀 Exemple de workflow final
-
-1. `yarn dev` démarre l’application.  
-2. Ouvrez la page **“Call Metrics”** → vous voyez les agrégats globaux.  
-3. Cliquez sur un **Component** → un onglet “Call Metrics” affiche ses chiffres.  
-4. L’API `GET /api/call-metrics/summary` retourne un JSON cohérent.  
-
----
-
-## 📎 Exemple d’annotations dans un `catalog-info.yaml`
+## 📎 Exemple d’annotations
 
 ```yaml
-apiVersion: backstage.io/v1alpha1
-kind: Component
 metadata:
-  name: payment-service
   annotations:
-    example.com/calls.in: "20"
-    example.com/calls.out: "10"
-spec:
-  type: service
-  owner: team-a
-  lifecycle: production
-```
-
----
-
-## 🗂️ Exemple de rendu attendu (simplifié)
-
-```
---------------------------------------------
-| Total Components : 5                     |
-| Components avec annotations : 3          |
-| Appels entrants (total) : 41             |
-| Appels sortants (total) : 29             |
---------------------------------------------
-| Component Name | Calls In | Calls Out    |
-|----------------|-----------|-------------|
-| payment-service| 20        | 10          |
-| web-frontend   | 12        | 9           |
---------------------------------------------
+    example.com/calls.in: "10"
+    example.com/calls.out: "7"
 ```
 
 ---
 
 👨‍💻 **Bonne chance !**  
-Prenez du plaisir à explorer Backstage et à découvrir sa logique interne.
+Cet exercice est une bonne occasion de découvrir le **nouveau système modulaire de Backstage (2025)**.
